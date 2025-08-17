@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WP DevPress - WebP Converter</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        .header-container {
+            background-color: #283593;
+            color: #ffffff;
+            padding: 20px 0;
+        }
+        .logo {
+            width: 100px;
+            margin-bottom: 10px;
+        }
+        h1 {
+            margin: 10px 0;
+            color: #ffffff;
+        }
+        .upload-section {
+            margin: 20px auto;
+            width: 80%;
+            max-width: 600px;
+            background: #ffffff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .upload-container {
+            border: 2px dashed #283593;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .upload-container h2 {
+            margin-top: 0;
+        }
+        #fileInput {
+            display: none;
+        }
+        button {
+            display: inline-block;
+            margin: 10px 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: #283593;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1a237e;
+        }
+        .drag-drop-area {
+            margin: 20px 0;
+            padding: 40px 20px;
+            border: 2px dashed #283593;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .drag-drop-area.drag-over {
+            background-color: #e3f2fd;
+        }
+        #fileList {
+            margin: 20px 0;
+            list-style: none;
+            padding: 0;
+        }
+        #fileList li {
+            background: #f1f1f1;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: left;
+        }
+        .quality-section {
+            margin-top: 20px;
+        }
+        .quality-section label {
+            margin-right: 10px;
+        }
+        .quality-section input {
+            width: 80px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <!-- <img src="wp-content/uploads/2023/08/logo-fundo-branca.png" alt="WP DevPress Logo" class="logo"> -->
+            <h1>Convert Images to WebP Format</h1>
+            <p>Boost your website's performance by converting your images to WebP. Fast, Free, and Secure!</p>
+        </div>
+    </header>
+    <main>
+        <section class="upload-section">
+            <div class="upload-container">
+                <h2>Select Images to Convert</h2>
+                <input type="file" id="fileInput" multiple>
+                <div class="drag-drop-area" id="dragDropArea">
+                    Drag and drop images here or click to select files
+                </div>
+                <ul id="fileList"></ul>
+                <button id="convertButton">Convert to WebP</button>
+                <button id="downloadButton" style="display:none;">Download Converted Images</button>
+                <p>or drag and drop .jpg, .gif, .png, .jpeg, .svg, .ico, .bmp, .PNG, .JPG, .JPEG</p>
+                <div class="quality-section">
+                    <label for="quality">Quality:</label>
+                    <input type="number" id="quality" min="0" max="100" value="80">%
+                </div>
+            </div>
+        </section>
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+    <script>
+        document.getElementById('convertButton').addEventListener('click', async () => {
+            const input = document.getElementById('fileInput');
+            const quality = document.getElementById('quality').value / 100;
+            if (input.files.length === 0) {
+                alert('Please select one or more files.');
+                return;
+            }
+console.log(`Convertion initiated, ${input.files.length} files to convert.`)
+            const convertedFiles = [];
+            for (const file of input.files) {
+                console.log(`${convertedFiles.length} converterd.`)
+                const name = file.name.split("", 26).join("");
+                const webpFile = await convertToWebP(file, quality);
+                convertedFiles.push({webpFile,name});
+            }
+
+            if (convertedFiles.length > 1) {
+                const zip = new JSZip();
+                convertedFiles.forEach((file, index) => {
+                    zip.file(`${file.name}.webp`, file.webpFile);
+                });
+                const content = await zip.generateAsync({ type: 'blob' });
+                const downloadLink = document.createElement('a');
+                downloadLink.href = URL.createObjectURL(content);
+                downloadLink.download = 'converted_images.zip';
+                downloadLink.click();
+                console.log('Downloaded completed.')
+            } else {
+                const downloadLink = document.createElement('a');
+                downloadLink.href = URL.createObjectURL(convertedFiles[0]);
+                downloadLink.download = 'converted_image.webp';
+                downloadLink.click();
+                console.log('Downloaded completed.')
+            }
+
+            document.getElementById('downloadButton').style.display = 'none';
+            input.value = ''; // Clear the input
+            document.getElementById('fileList').innerHTML = ''; // Clear the file list
+        });
+
+        document.getElementById('fileInput').addEventListener('change', (event) => {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            for (const file of event.target.files) {
+                const li = document.createElement('li');
+                li.textContent = file.name;
+                fileList.appendChild(li);
+            }
+            document.getElementById('downloadButton').style.display = 'none';
+        });
+
+        async function convertToWebP(file, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const img = new Image();
+                    img.onload = function () {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        canvas.toBlob((blob) => {
+                            resolve(blob);
+                        }, 'image/webp', quality);
+                    }
+                    img.src = event.target.result;
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        const dragDropArea = document.getElementById('dragDropArea');
+
+        dragDropArea.addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        dragDropArea.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            dragDropArea.classList.add('drag-over');
+        });
+
+        dragDropArea.addEventListener('dragleave', () => {
+            dragDropArea.classList.remove('drag-over');
+        });
+
+        dragDropArea.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dragDropArea.classList.remove('drag-over');
+            const files = event.dataTransfer.files;
+            document.getElementById('fileInput').files = files;
+
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            for (const file of files) {
+                const li = document.createElement('li');
+                li.textContent = file.name;
+                fileList.appendChild(li);
+            }
+        });
+    </script>
+</body>
+</html>
