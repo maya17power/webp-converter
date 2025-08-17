@@ -91,8 +91,15 @@
         width: 80px;
       }
     </style>
+    
   </head>
   <body>
+    <audio id="imgConverted">
+      <source src="./sound/imageConverted.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="completed">
+      <source src="./sound/convertedCompleted.mp3" type="audio/mpeg" />
+    </audio>
     <header>
       <div class="header-container">
         <!-- <img src="wp-content/uploads/2023/08/logo-fundo-branca.png" alt="WP DevPress Logo" class="logo"> -->
@@ -129,6 +136,9 @@
     </main>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
     <script>
+      const imgConverted = document.getElementById("imgConverted");
+      const completed = document.getElementById("completed");
+
       document
         .getElementById("convertButton")
         .addEventListener("click", async () => {
@@ -143,16 +153,18 @@
           );
           const convertedFiles = [];
           for (const file of input.files) {
-            console.log(`${convertedFiles.length} converterd.`);
             const name = file.name.split("", 26).join("");
             const webpFile = await convertToWebP(file, quality);
+            console.log(`${convertedFiles.length + 1} converted.`);
             convertedFiles.push({ webpFile, name });
+            imgConverted.play();
           }
 
           if (convertedFiles.length > 1) {
             const zip = new JSZip();
             convertedFiles.forEach((file, index) => {
               zip.file(`${file.name}.webp`, file.webpFile);
+              console.log(`Ziping file: ${file.name}`)
             });
             const content = await zip.generateAsync({ type: "blob" });
             const downloadLink = document.createElement("a");
@@ -160,6 +172,7 @@
             downloadLink.download = "converted_images.zip";
             downloadLink.click();
             console.log("Downloaded completed.");
+            completed.play();
           } else {
             const downloadLink = document.createElement("a");
             downloadLink.href = URL.createObjectURL(convertedFiles[0]);
