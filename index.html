@@ -118,7 +118,10 @@
           <div class="drag-drop-area" id="dragDropArea">
             Drag and drop images here or click to select files
           </div>
+          
           <ul id="fileList"></ul>
+          <label for="groupName">Group Name:</label>
+          <input type="text" id="groupName" name="groupName">
           <button id="convertButton">Convert to WebP</button>
           <button id="downloadButton" style="display: none">
             Download Converted Images
@@ -138,6 +141,7 @@
     <script>
       const imgConverted = document.getElementById("imgConverted");
       const completed = document.getElementById("completed");
+      const groupName = document.getElementById("groupName").value.toUpperCase();
 
       document
         .getElementById("convertButton")
@@ -154,7 +158,9 @@
           const convertedFiles = [];
           for (const file of input.files) {
             const name = file.name.split("", 26).join("");
-            const webpFile = await convertToWebP(file, quality);
+            //console.log(`${groupName.replace(" ", "-")}-${name}`);
+            //const webpFile = await convertToWebP(file, quality);
+            const webpFile = await convertToWebP(`${groupName.replace(" ", "-")}-${name}`, quality);
             console.log(`${convertedFiles.length + 1} converted.`);
             convertedFiles.push({ webpFile, name });
             imgConverted.play();
@@ -220,7 +226,8 @@
             };
             img.src = event.target.result;
           };
-          reader.readAsDataURL(file);
+          reader.readAsArrayBuffer(file);
+          // reader.readAsDataURL(file);
         });
       }
 
