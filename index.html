@@ -132,7 +132,7 @@
           
           for (const file of input.files) {
             const name = file.name.replace(/\.[^.]+$/, "");
-            const newName = `${groupName.value.toUpperCase()}-${name}`.replace(" ", "-");
+            const newName = `${groupName.value.toUpperCase()}-${name}`.replace(/\s+/g, "-");
             document.getElementById("status").innerHTML = `Converted Files: ${convertedFiles.length} of ${input.files.length}`;
             const webpFile = await convertToWebP(file, quality);
 
