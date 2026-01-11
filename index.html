@@ -163,6 +163,7 @@
             downloadLink.download = "converted_images.zip";
             downloadLink.click();
             URL.revokeObjectURL(url);
+            document.getElementById("status").innerHTML = `Completed!`;
             completed.play();
           } else {
             const downloadLink = document.createElement("a");
