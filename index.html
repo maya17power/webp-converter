@@ -17,10 +17,6 @@
         color: #ffffff;
         padding: 20px 0;
       }
-      .logo {
-        width: 100px;
-        margin-bottom: 10px;
-      }
       h1 {
         margin: 10px 0;
         color: #ffffff;
@@ -39,14 +35,10 @@
         padding: 20px;
         border-radius: 10px;
       }
-      .upload-container h2 {
-        margin-top: 0;
-      }
       #fileInput {
         display: none;
       }
       button {
-        display: inline-block;
         margin: 10px 5px;
         padding: 10px 20px;
         font-size: 16px;
@@ -55,9 +47,6 @@
         border: none;
         border-radius: 5px;
         cursor: pointer;
-      }
-      button:hover {
-        background-color: #1a237e;
       }
       .drag-drop-area {
         margin: 20px 0;
@@ -81,18 +70,9 @@
         border-radius: 5px;
         text-align: left;
       }
-      .quality-section {
-        margin-top: 20px;
-      }
-      .quality-section label {
-        margin-right: 10px;
-      }
-      .quality-section input {
-        width: 80px;
-      }
     </style>
-    
   </head>
+
   <body>
     <audio id="imgConverted">
       <source src="./sound/imageConverted.mp3" type="audio/mpeg" />
@@ -100,36 +80,28 @@
     <audio id="completed">
       <source src="./sound/convertedCompleted.mp3" type="audio/mpeg" />
     </audio>
+
     <header>
       <div class="header-container">
-        <!-- <img src="wp-content/uploads/2023/08/logo-fundo-branca.png" alt="WP DevPress Logo" class="logo"> -->
         <h1>Convert Images to WebP Format</h1>
-        <p>
-          Boost your website's performance by converting your images to WebP.
-          Fast, Free, and Secure!
-        </p>
+        <p>Fast, Free, and Secure!</p>
       </div>
     </header>
+
     <main>
       <section class="upload-section">
         <div class="upload-container">
+          <label id="status">Status</label>
           <h2>Select Images to Convert</h2>
           <input type="file" id="fileInput" multiple />
           <div class="drag-drop-area" id="dragDropArea">
             Drag and drop images here or click to select files
           </div>
-          
           <ul id="fileList"></ul>
           <label for="groupName">Group Name:</label>
           <input type="text" id="groupName" name="groupName">
           <button id="convertButton">Convert to WebP</button>
-          <button id="downloadButton" style="display: none">
-            Download Converted Images
-          </button>
-          <p>
-            or drag and drop .jpg, .gif, .png, .jpeg, .svg, .ico, .bmp, .PNG,
-            .JPG, .JPEG
-          </p>
+
           <div class="quality-section">
             <label for="quality">Quality:</label>
             <input type="number" id="quality" min="0" max="100" value="80" />%
@@ -137,59 +109,71 @@
         </div>
       </section>
     </main>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+
     <script>
       const imgConverted = document.getElementById("imgConverted");
       const completed = document.getElementById("completed");
-      const groupName = document.getElementById("groupName").value.toUpperCase();
+      const groupName = document.getElementById("groupName");
 
       document
         .getElementById("convertButton")
         .addEventListener("click", async () => {
           const input = document.getElementById("fileInput");
           const quality = document.getElementById("quality").value / 100;
+
           if (input.files.length === 0) {
             alert("Please select one or more files.");
             return;
           }
-          console.log(
-            `Convertion initiated, ${input.files.length} files to convert.`
-          );
+
           const convertedFiles = [];
+          
           for (const file of input.files) {
-            const name = file.name.split("", 26).join("");
-            //console.log(`${groupName.replace(" ", "-")}-${name}`);
-            //const webpFile = await convertToWebP(file, quality);
-            const webpFile = await convertToWebP(`${groupName.replace(" ", "-")}-${name}`, quality);
-            console.log(`${convertedFiles.length + 1} converted.`);
-            convertedFiles.push({ webpFile, name });
+            const name = file.name.replace(/\.[^.]+$/, "");
+            const newName = `${groupName.value.toUpperCase()}-${name}`.replace(" ", "-");
+            document.getElementById("status").innerHTML = `Converted Files: ${convertedFiles.length} of ${input.files.length}`;
+            const webpFile = await convertToWebP(file, quality);
+
+            if(webpFile){
+              //MOVE CONVERTED FILES TO CATCHER ARRAY
+              convertedFiles.push({ webpFile, newName });
+              document.getElementById("status").innerHTML = `Converted Files: ${convertedFiles.length} of ${input.files.length}`;
+            }
+
+            //MOVE CONVERTED FILES TO CATCHER ARRAY
+            // convertedFiles.push({ webpFile, newName });
             imgConverted.play();
           }
 
+          //REVIEW CONVERTED FILES ARRAY TOTAL
           if (convertedFiles.length > 1) {
             const zip = new JSZip();
-            convertedFiles.forEach((file, index) => {
-              zip.file(`${file.name}.webp`, file.webpFile);
-              console.log(`Ziping file: ${file.name}`)
+            convertedFiles.forEach((file) => {
+              let f = 0;
+              document.getElementById("status").innerHTML = `Zipping Files`;
+              zip.file(`${file.newName}.webp`, file.webpFile);
             });
+            
             const content = await zip.generateAsync({ type: "blob" });
             const downloadLink = document.createElement("a");
-            downloadLink.href = URL.createObjectURL(content);
+            const url = URL.createObjectURL(content);
+            downloadLink.href = url;
             downloadLink.download = "converted_images.zip";
             downloadLink.click();
-            console.log("Downloaded completed.");
+            URL.revokeObjectURL(url);
             completed.play();
           } else {
             const downloadLink = document.createElement("a");
-            downloadLink.href = URL.createObjectURL(convertedFiles[0]);
-            downloadLink.download = "converted_image.webp";
+            const url = URL.createObjectURL(convertedFiles[0].webpFile);
+            downloadLink.href = url;
+            downloadLink.download = `${convertedFiles[0].newName}.webp`;
             downloadLink.click();
-            console.log("Downloaded completed.");
+            URL.revokeObjectURL(url);
           }
-
-          document.getElementById("downloadButton").style.display = "none";
-          input.value = ""; // Clear the input
-          document.getElementById("fileList").innerHTML = ""; // Clear the file list
+          input.value = "";
+          document.getElementById("fileList").innerHTML = "";
         });
 
       document
@@ -202,7 +186,6 @@
             li.textContent = file.name;
             fileList.appendChild(li);
           }
-          document.getElementById("downloadButton").style.display = "none";
         });
 
       async function convertToWebP(file, quality) {
@@ -226,8 +209,7 @@
             };
             img.src = event.target.result;
           };
-          reader.readAsArrayBuffer(file);
-          // reader.readAsDataURL(file);
+          reader.readAsDataURL(file);
         });
       }
 
